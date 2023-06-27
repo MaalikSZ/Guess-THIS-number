@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Zgadnij TĘ liczbę</title>
+  <style>
+    body {
+      font-family: 'Montserrat', sans-serif;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      background-image: url("https://i.redd.it/yxejmzk4mj781.jpg");
+      background-size: cover;
+      background-position: center;
+    }
+
+    #game-container {
+      background-color: rgba(255, 255, 255, 0.8);
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+      height: 400px;
+      max-width: 500px;
+      width: 80%;
+      margin: 0 auto;
+      overflow: auto;
+    }
+
+    h1 {
+      color: #fff;
+      margin-top: 50px;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    #guess-input {
+      padding: 10px;
+      font-size: 16px;
+      border: 2px solid #ccc;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      outline: none;
+    }
+
+    #submit-button {
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #4CAF50;
+      color: #fff;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #fff;
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    #attempts {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    #hint {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    #timer {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 10px;
+      color: #fff;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    footer {
+      font-size: 12px;
+      color: #fff;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+  </style>
+  <link href="https://fonts.googleapis.com/css?family=Montserrat:400,700" rel="stylesheet">
+</head>
+<body>
+  <div id="game-container">
+    <h1>Zgadnij TĘ liczbę</h1>
+
+    <p>Wybierz liczbę od 1 do 100:</p>
+
+    <input type="number" id="guess-input" min="1" max="100" />
+    <br />
+    <button id="submit-button">Zgadnij</button>
+
+    <div id="attempts">Liczba prób: 0</div>
+    <div id="hint"></div>
+    <div id="result"></div>
+    <div id="timer"></div>
+  </div>
+
+  <script>
+    var secretNumber = Math.floor(Math.random() * 100) + 1;
+    var attempts = 0;
+    var startTime;
+    var timerInterval;
+
+    var submitButton = document.getElementById("submit-button");
+    var guessInput = document.getElementById("guess-input");
+    var resultDiv = document.getElementById("result");
+    var attemptsDiv = document.getElementById("attempts");
+    var hintDiv = document.getElementById("hint");
+    var timerDiv = document.getElementById("timer");
+
+    var hints = [
+      "Podpowiedź: Liczba jest większa niż [poprzednia próba].",
+      "Podpowiedź: Liczba jest mniejsza niż [poprzednia próba].",
+      "Podpowiedź: Spróbuj wybrać liczbę pomiędzy [1] a [100].",
+      "Podpowiedź: Liczba kończy się na [cyfra].",
+      "Podpowiedź: Pierwsza cyfra liczby to [cyfra].",
+      "Podpowiedź: Liczba jest większa niż średnia wartość pomiędzy [dolny zakres] a [górny zakres].",
+      "Podpowiedź: Liczba jest mniejsza niż średnia wartość pomiędzy [dolny zakres] a [górny zakres].",
+      "Podpowiedź: Spróbuj wybrać liczbę, która jest bliżej [wybranej liczby] niż poprzednia próba.",
+      "Podpowiedź: Spróbuj wybrać liczbę, która jest dalej od [wybranej liczby] niż poprzednia próba."
+    ];
+
+    function getRandomHint() {
+      var randomIndex = Math.floor(Math.random() * hints.length);
+      var hint = hints[randomIndex];
+      hint = hint.replace("[poprzednia próba]", guessInput.value);
+      hint = hint.replace("[1]", 1);
+      hint = hint.replace("[100]", 100);
+      hint = hint.replace("[cyfra]", secretNumber.toString().charAt(0));
+      hint = hint.replace("[dolny zakres]", 1);
+      hint = hint.replace("[górny zakres]", 100);
+      hint = hint.replace("[wybranej liczby]", secretNumber);
+      return hint;
+    }
+
+    submitButton.addEventListener("click", function() {
+      var userGuess = parseInt(guessInput.value);
+
+      if (isNaN(userGuess) || userGuess < 1 || userGuess > 100) {
+        resultDiv.innerHTML = "Podaj liczbę od 1 do 100!";
+        hintDiv.innerHTML = "";
+        return;
+      }
+
+      attempts++;
+
+      if (attempts === 1) {
+        startTime = new Date().getTime();
+        timerInterval = setInterval(updateTimer, 1000);
+      }
+
+      if (userGuess === secretNumber) {
+        var endTime = new Date().getTime();
+        var totalTimeInSeconds = (endTime - startTime) / 1000;
+        var minutes = Math.floor(totalTimeInSeconds / 60);
+        var seconds = totalTimeInSeconds % 60;
+        var hours = Math.floor(minutes / 60);
+        minutes = minutes % 60;
+        resultDiv.innerHTML = "Brawo! Udało Ci się zgadnąć liczbę " + secretNumber + " po " + attempts + " próbach!";
+        resultDiv.innerHTML += "<br />Czas: " + hours + " godz. " + minutes + " min. " + seconds + " sek.";
+        clearInterval(timerInterval);
+        submitButton.disabled = true;
+        guessInput.disabled = true;
+        hintDiv.innerHTML = "";
+      } else if (userGuess < secretNumber) {
+        resultDiv.innerHTML = "Za niska. Spróbuj ponownie!";
+        hintDiv.innerHTML = getRandomHint();
+      } else {
+        resultDiv.innerHTML = "Za wysoka. Spróbuj ponownie!";
+        hintDiv.innerHTML = getRandomHint();
+      }
+
+      attemptsDiv.innerHTML = "Liczba prób: " + attempts;
+    });
+
+    function updateTimer() {
+      var currentTime = new Date().getTime();
+      var elapsedTimeInSeconds = Math.floor((currentTime - startTime) / 1000);
+      var minutes = Math.floor(elapsedTimeInSeconds / 60);
+      var seconds = elapsedTimeInSeconds % 60;
+      var hours = Math.floor(minutes / 60);
+      minutes = minutes % 60;
+      timerDiv.innerHTML = "Czas: " + hours + " godz. " + minutes + " min. " + seconds + " sek.";
+    }
+
+    var longestHint = hints.reduce(function(a, b) {
+      return a.length > b.length ? a : b;
+    }, "");
+
+    var gameContainer = document.getElementById("game-container");
+    gameContainer.style.minWidth = longestHint.length * 10 + "px";
+  </script>
+  <footer>&copy; 2022 Szymon Wasik.</footer>
+</body>
+</html>
